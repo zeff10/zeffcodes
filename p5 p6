@@ -1,0 +1,38 @@
+#Deffie Hellman
+p = 23 #prime number dena 
+g = 5 
+print("The prime number is: ",p) 
+print("The primitive root of p is: ",g) 
+ 
+x = 8 
+y = 10 
+print("The value of private value for Sender is: ",x) 
+print("The value of private value for Bob is: ",y) 
+ 
+R1 = g**x % p 
+R2 = g**y % p 
+print("The value of Public key for Sender is: ",R1) 
+print("The value of Public key for Reciever is: ",R2) 
+ 
+K1 = R1**y % p 
+K2 = R2**x % p 
+print("The value of Shared Key for Sender is: ",K1) 
+print("The value of Shared Key for Reciever is: ",K2) 
+ 
+if K1 == K2: 
+  print("Key exchange successful and the shared key is ", K1) 
+else: 
+  print("Key exchange failed")
+
+
+
+#Keyloggers
+!pip install pynput
+from pynput.keyboard import Key, Listener
+def keypress(key):
+    print("Key pressed is: ", key)
+def keyrelease(key):
+    if key == Key.esc:
+        return False
+with Listener(on_press = keypress, on_release = keyrelease) as Lst:
+    Lst.join()
