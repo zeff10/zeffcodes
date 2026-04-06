@@ -1,0 +1,154 @@
+2. VAE
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import matplotlib.pyplot as plt
+class Sampling(layers.Layer):
+    def call(self, inputs):
+        z_mean, z_log_var = inputs
+        batch = tf.shape(z_mean)[0]
+        dim = tf.shape(z_mean)[1]
+        epsilon = tf.random.normal(shape=(batch, dim))
+        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+ 
+
+def build_encoder(latent_dim=2):
+    encoder_inputs = keras.Input(shape=(28, 28, 1))
+    x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(encoder_inputs)
+    x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
+    x = layers.Flatten()(x)
+    x = layers.Dense(16, activation="relu")(x)
+    z_mean = layers.Dense(latent_dim, name="z_mean")(x)
+    z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
+    z = Sampling()([z_mean, z_log_var])
+    encoder = keras.Model(encoder_inputs, [z_mean, z_log_var, z], name="encoder")
+    return encoder
+ 
+
+def build_decoder(latent_dim=2):
+    latent_inputs = keras.Input(shape=(latent_dim,))
+    x = layers.Dense(7 * 7 * 64, activation="relu")(latent_inputs)
+    x = layers.Reshape((7, 7, 64))(x)
+    x = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
+    x = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")(x)
+    decoder_outputs = layers.Conv2DTranspose(1, 3, activation="sigmoid", padding="same")(x)
+    decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
+    return decoder
+class VAE(keras.Model):
+    def __init__(self, encoder, decoder, **kwargs):
+        super().__init__(**kwargs)
+        self.encoder = encoder
+        self.decoder = decoder
+        self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
+        self.reconstruction_loss_tracker = keras.metrics.Mean(name="reconstruction_loss")
+        self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
+    @property
+    def metrics(self):
+        return [
+            self.total_loss_tracker,
+            self.reconstruction_loss_tracker,
+            self.kl_loss_tracker,
+        ]
+    def call(self, inputs):
+        z_mean, z_log_var, z = self.encoder(inputs)
+        reconstruction = self.decoder(z)
+        return reconstruction
+    def train_step(self, data):
+        with tf.GradientTape() as tape:
+            z_mean, z_log_var, z = self.encoder(data)
+            reconstruction = self.decoder(z)
+            reconstruction_loss = tf.reduce_mean(
+                tf.reduce_sum(
+                    keras.losses.binary_crossentropy(data, reconstruction),
+                    axis=(1, 2)
+                )
+            )
+            kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
+            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+            total_loss = reconstruction_loss + kl_loss
+        grads = tape.gradient(total_loss, self.trainable_weights)
+        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
+        self.total_loss_tracker.update_state(total_loss)
+        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
+        self.kl_loss_tracker.update_state(kl_loss)
+        return {
+            "loss": self.total_loss_tracker.result(),
+            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "kl_loss": self.kl_loss_tracker.result(),
+        }
+    def test_step(self, data):
+        x = data # The issue was 'data' itself, not data[0] here. The previous fix was incomplete.
+        if isinstance(x, tuple): # Add check if data is a tuple (features, labels)
+          x = x[0] # Extract input features if it's a tuple
+        z_mean, z_log_var, z = self.encoder(x)
+        reconstruction = self.decoder(z)
+        reconstruction_loss = tf.reduce_mean(
+            tf.reduce_sum(
+                keras.losses.binary_crossentropy(x, reconstruction),
+                axis=(1, 2)
+            )
+        )
+        kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
+        kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+        total_loss = reconstruction_loss + kl_loss
+        self.total_loss_tracker.update_state(total_loss)
+        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
+        self.kl_loss_tracker.update_state(kl_loss)
+        return {
+            "loss": self.total_loss_tracker.result(),
+            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "kl_loss": self.kl_loss_tracker.result(),
+        }
+ 
+
+ 
+
+(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
+x_train = np.expand_dims(x_train, -1).astype("float32") / 255
+x_test = np.expand_dims(x_test, -1).astype("float32") / 255
+latent_dim = 2
+encoder = build_encoder(latent_dim)
+decoder = build_decoder(latent_dim)
+vae = VAE(encoder, decoder)
+vae.compile(optimizer=keras.optimizers.Adam(), loss='mse')
+ 
+
+print("Training VAE...")
+vae.fit(x_train, epochs=10, batch_size=128, validation_data=(x_test, x_test))
+ 
+
+def plot_latent_space(vae, n=20, figsize=15):
+    digit_size = 28
+    scale = 1.0
+    figure = np.zeros((digit_size * n, digit_size * n))
+    grid_x = np.linspace(-scale, scale, n)
+    grid_y = np.linspace(-scale, scale, n)[::-1]
+    for i, yi in enumerate(grid_y):
+        for j, xi in enumerate(grid_x):
+            z_sample = np.array([[xi, yi]])
+            x_decoded = vae.decoder.predict(z_sample, verbose=0)
+            digit = x_decoded[0].reshape(digit_size, digit_size)
+            figure[
+                i * digit_size : (i + 1) * digit_size,
+                j * digit_size : (j + 1) * digit_size,
+            ] = digit
+    plt.figure(figsize=(figsize, figsize))
+    plt.imshow(figure, cmap="Greys_r")
+    plt.title("VAE Latent Space Visualization")
+    plt.axis("off")
+    plt.show()
+plot_latent_space(vae)
+ 
+
+def generate_samples(decoder, n_samples=10):
+    z_sample = np.random.normal(size=(n_samples, latent_dim))
+    generated = decoder.predict(z_sample, verbose=0)
+    fig, axes = plt.subplots(2, 5, figsize=(12, 5))
+    for i, ax in enumerate(axes.flat):
+        ax.imshow(generated[i].reshape(28, 28), cmap="gray")
+        ax.axis("off")
+    plt.suptitle("Randomly Generated Images")
+    plt.tight_layout()
+    plt.show()
+generate_samples(decoder)
