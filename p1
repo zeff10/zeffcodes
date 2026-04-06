@@ -1,0 +1,71 @@
+#Caesar
+#ceasar cipher
+import string
+message= input("Enter message to be encrypt: ")
+def encrypt(pt, key=3):
+    pool= list(string.ascii_lowercase) + list(string.ascii_uppercase)
+    cipher = ""
+    for char in pt:
+        if char in pool:
+            E= (pool.index(char) + key) % len(pool)
+            cipher += pool[E]
+        else:
+            cipher += char
+    return cipher
+
+encrypt_message= encrypt(message)
+print("Encrypted text: "+encrypt(message))
+
+def decrypt(cipher_msg, key=3):
+    pool=list(string.ascii_lowercase) + list(string.ascii_uppercase)
+    pt= ""
+    for char in cipher_msg:
+        if char in pool:
+            D= (pool.index(char) - key) % len(pool)
+            pt += pool[D]
+        else:
+            pt += char
+    return pt
+
+print("Decrypted message: "+decrypt(encrypt_message))
+
+
+
+
+
+#Monoalphabetic cipher
+import random
+import string
+
+def gen_key():
+    pt_pool= list(string.ascii_lowercase) + list(string.ascii_uppercase)
+    ct_pool= list(string.ascii_lowercase) + list(string.ascii_uppercase)
+    random.shuffle(ct_pool)
+    return dict(zip(pt_pool, ct_pool))
+
+key=gen_key()
+msg= input("Enter message to be encrypted here: ")
+
+def encryption(pt, keyword):
+    cipher=""
+    for char in pt:
+        if char in keyword.keys():
+            cipher += keyword[char]
+        else:
+            cipher += char
+    return cipher
+
+encrypt = encryption(msg, key)
+print("Encrypted Text: "+encryption(msg,key))
+
+def decryption(ct, keyword):
+    reverse_key = {v: k for k, v in keyword.items()}
+    pt=""
+    for char in ct:
+        if char in reverse_key:
+            pt+=reverse_key[char]
+        else:
+            pt +=char
+    return pt
+
+print("Decrypted Text: "+decryption(encrypt, key))
