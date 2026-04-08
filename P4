@@ -1,49 +1,68 @@
-4.Solving_XOR_problem_using_deep_feed_forward_network
-import numpy as np
-def unitStep(v):
-    if v >= 0:
-        return 1
-    else:
-        return 0
+4.regressoin model that could predict the salary of an employee 
+from the given experience and viusalize univariate linear regression on it. 
+
  
 
-def perceptronModel(x, w, b):
-    v = np.dot(w, x) + b
-    y = unitStep(v)
-    return y
+import numpy as np 
+!pip install scikit-learn 
+from sklearn import datasets 
+
  
 
-def NOT_logicFunction(x):
-    wNOT = -1
-    bNOT = 0.5
-    return perceptronModel(x, wNOT, bNOT)
+x, y, coef = datasets.make_regression(
+    n_samples=100,
+    n_features=1,
+    n_informative=1,
+    noise=10,
+    coef=True,
+    random_state=0
+)
+
+x=np.interp(x,(x.min(),x.max()),(0,20)) 
+len(x) 
+print(x)
+
+y=np.interp(y,(y.min(),y.max()),(20000,150000)) 
+len(y) 
+
+import matplotlib.pyplot as plt 
+plt.plot(x,y,'.',label='training data') 
+plt.xlabel("Years of Experience") 
+plt.ylabel("Salary") 
+plt.title("Experience vs Salary")
+
+from sklearn.linear_model import LinearRegression 
+reg_model=LinearRegression() 
+reg_model.fit(x,y) 
+
+y_predicted=reg_model.predict(x)
+plt.plot(x,y_predicted,"",color="red") 
+plt.plot(x,y,".",label="training data") 
+plt.xlabel("Years of Experience") 
+plt.ylabel("Salary") 
+plt.title("Experience vs Salary")
+
+-----------------------------------------------------------------
+
+4.2  to simulate linear model Y=10+7*x+e  for random 100 samples and 
+visualize univariate linear regression on it.  
+
  
 
-def AND_logicFunction(x):
-    w = np.array([1, 1])
-    bAND = -1.5
-    return perceptronModel(x, w, bAND)
- 
-
-def OR_logicFunction(x):
-    w = np.array([1, 1])
-    bOR = -0.5
-    return perceptronModel(x, w, bOR)
- 
-
-def XOR_logicFunction(x):
-  y1 = AND_logicFunction(x)
-  y2 = OR_logicFunction(x)
-  y3 = NOT_logicFunction(y1)
-  final_x = np.array([y2, y3])
-  finalOutput = AND_logicFunction(final_x)
-  return finalOutput
-     
-test1 = np.array([0, 1])
-test2 = np.array([1, 1])
-test3 = np.array([0, 0])
-test4 = np.array([1, 0])
-print("XOR({}, {}) = {}".format(0, 1, XOR_logicFunction(test1)))
-print("XOR({}, {}) = {}".format(1, 1, XOR_logicFunction(test2)))
-print("XOR({}, {}) = {}".format(0, 0, XOR_logicFunction(test3)))
-print("XOR({}, {}) = {}".format(1, 0, XOR_logicFunction(test4)))
+from sklearn.linear_model import LinearRegression 
+import numpy as np 
+import matplotlib.pyplot as plt 
+reg_model=LinearRegression() 
+x=np.random.rand(100,1) 
+error=np.random.rand(100,1) 
+b0=10 
+b1=7 
+y=b0+b1*x+error 
+reg_model.fit(x,y) 
+y_predicted=reg_model.predict(x) 
+plt.plot(x,y_predicted,".",color="black",label="Predicted data") 
+plt.plot(x,y,".",label="Training data") 
+plt.xlabel("X") 
+plt.ylabel("Y") 
+plt.title("X vs Y") 
+plt.legend()
