@@ -1,0 +1,72 @@
+6.KNN ALGORITHM TO PREDICT BREAST CANCER USING BREAST CANCER 
+WINSCONSIN DATASET
+
+ 
+
+import numpy as np 
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn.datasets import load_breast_cancer 
+from sklearn.metrics import confusion_matrix 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.model_selection import train_test_split 
+import seaborn as sns 
+
+ 
+
+sns.set() 
+breast_cancer_data=load_breast_cancer() 
+x_df=pd.DataFrame(breast_cancer_data.data,columns=breast_cancer_data.feature_names) 
+x_df.head() 
+
+x_df=x_df[["mean area" , "mean compactness"]] 
+x_df.head()
+
+ 
+
+y_df=pd.Categorical.from_codes(breast_cancer_data.target,breast_cancer_data.target_names) 
+print(y_df) 
+
+ 
+
+y_df=pd.get_dummies(y_df,drop_first=True) 
+print(y_df) 
+
+ 
+
+X_train,X_test,Y_train,Y_test=train_test_split(x_df,y_df,random_state=1) 
+knn=KNeighborsClassifier(n_neighbors=5,metric="euclidean") 
+knn.fit(X_train,Y_train) 
+
+ 
+
+combined_df=pd.concat([X_test,Y_test],axis=1) 
+sns.scatterplot(x="mean area", y="mean compactness", hue="benign", data=combined_df)
+
+ 
+
+y_pred=knn.predict(X_test) 
+plt.scatter(X_test['mean area'], X_test['mean compactness'],c=y_pred,cmap="coolwarm",alpha=0.7) 
+
+ 
+
+cf=confusion_matrix(Y_test,y_pred) 
+print(cf) 
+
+ 
+
+labels=["True Negatives","False Positive","False Negative","True Positive"] 
+label=np.asarray(labels).reshape(2,2) 
+categories=["Zero","One"] 
+ax=plt.subplot() 
+sns.heatmap(cf,annot=True,ax=ax) 
+ax.set_xlabel("Predicted Values") 
+ax.set_ylabel("Actual Values") 
+ax.set_title("Confusion Matrix") 
+ax.xaxis.set_ticklabels(["Malignant", "Benign"]) 
+ax.yaxis.set_ticklabels(["Malignant", "Benign"]) 
+
+ 
+
+tp,fn,fp,tn=confusion_matrix(Y_test,y_pred,labels=[1,0]).reshape(-1) 
+print(tp,fn,fp,tn)
