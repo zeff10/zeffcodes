@@ -1,0 +1,67 @@
+7. DECISION TREE CLASSIFICATION ON TITANIC DATASET 
+
+import os 
+os.getcwd() 
+import pandas as pd 
+from sklearn.model_selection import train_test_split 
+import matplotlib.pyplot as plt 
+from sklearn.tree import DecisionTreeClassifier, plot_tree 
+from sklearn.metrics import accuracy_score, classification_report 
+titanic_df.head()
+
+ 
+
+titanic_df.info() 
+
+ 
+
+features=['Pclass','Sex','Age','SibSp','Parch'] 
+X=titanic_df[features] 
+print(X)
+
+ 
+
+X.info()
+
+ 
+
+Y=titanic_df['Survived'] 
+Y.info() 
+
+ 
+
+Y.head
+
+ 
+
+X['Sex']=X['Sex'].map({'male':0,'female':1}) 
+X.head()
+
+ 
+
+X['Age'].fillna(X['Age'].median(),inplace=True) 
+
+ 
+
+X.isnull().sum() 
+
+ 
+
+X_train,X_test,Y_train,Y_test=train_test_split(X,Y,test_size=0.2, random_state=10) 
+dtmodel=DecisionTreeClassifier(criterion='entropy', max_depth=4, random_state=10) 
+dtmodel.fit(X_train,Y_train) 
+
+ 
+
+Y_pred=dtmodel.predict(X_test) 
+print("Accuracy:", accuracy_score(Y_test, Y_pred)) 
+
+ 
+
+print(classification_report(Y_test, Y_pred)) 
+
+ 
+
+plt.figure(figsize=(18,10)) 
+plot_tree(dtmodel,feature_names=features,class_names=['Not Survived','Survived'],filled=True,rounded=True) 
+plt.show()
